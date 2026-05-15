@@ -82,6 +82,83 @@ def create_sample_allocated_task(
     )
 
 
+class TestBuildAllocationPrompt:
+    def test_discovery_prompt_includes_planning_semantics(self) -> None:
+        """Discovery phase prompt includes planning phase semantics."""
+        from sprint_composer.layer3 import _build_allocation_prompt
+        from sprint_composer.models import EnrichedSegment, Confidence, SegmentType
+
+        enriched = [
+            EnrichedSegment(
+                segment_id="S01",
+                excerpt="We need SSO",
+                type=SegmentType.FIRM_REQUEST,
+                l1_confidence=Confidence.HIGH,
+                l1_reasoning="Clear request.",
+                reference_match=None,
+                effort="5 days",
+                confidence=Confidence.HIGH,
+                blockers=[],
+                gap_questions=[],
+                enrichment_reasoning="Test.",
+            )
+        ]
+        prompt = _build_allocation_prompt(enriched, "Discovery", 2)
+
+        # Check for planning semantics
+        assert "planning" in prompt.lower() or "Configuration plan" in prompt
+        assert "allocation_reasoning" in prompt
+        # The prompt should mention Configuration (days 4–7) in the context of in-sprint items
+        assert "Configuration" in prompt
+
+    def test_non_discovery_prompt_excludes_planning_note(self) -> None:
+        """Non-Discovery phase prompt excludes planning phase semantics note."""
+        from sprint_composer.layer3 import _build_allocation_prompt
+        from sprint_composer.models import EnrichedSegment, Confidence, SegmentType
+
+        enriched = [
+            EnrichedSegment(
+                segment_id="S01",
+                excerpt="We need SSO",
+                type=SegmentType.FIRM_REQUEST,
+                l1_confidence=Confidence.HIGH,
+                l1_reasoning="Clear request.",
+                reference_match=None,
+                effort="5 days",
+                confidence=Confidence.HIGH,
+                blockers=[],
+                gap_questions=[],
+                enrichment_reasoning="Test.",
+            )
+        ]
+        prompt = _build_allocation_prompt(enriched, "Configuration", 5)
+
+        # Should not contain the PLANNING PHASE SEMANTICS note
+        assert "PLANNING PHASE SEMANTICS" not in prompt
+
+    def test_block1_header_shows_configuration_when_phase_is_discovery(self) -> None:
+        """Block 1 header shows 'PROPOSED FOR CONFIGURATION (Days 4–7)' when phase is Discovery."""
+        header = TranscriptHeader(day=2, phase="Discovery", participants=["Alice"])
+        task = create_sample_allocated_task("S01", "We need SSO...")
+        l3_result = Layer3Result(in_sprint=[task], out_of_sprint=[])
+
+        result = _format_proposal(TRANSCRIPT_PATH, header, l3_result, [], [], [], [])
+
+        assert "PROPOSED FOR CONFIGURATION (Days 4–7)" in result
+        assert "PROPOSED SPRINT TASKS" not in result
+
+    def test_block1_header_shows_sprint_tasks_when_phase_is_configuration(self) -> None:
+        """Block 1 header shows 'PROPOSED SPRINT TASKS' when phase is Configuration."""
+        header = TranscriptHeader(day=5, phase="Configuration", participants=["Alice"])
+        task = create_sample_allocated_task("S01", "We need SSO...")
+        l3_result = Layer3Result(in_sprint=[task], out_of_sprint=[])
+
+        result = _format_proposal(TRANSCRIPT_PATH, header, l3_result, [], [], [], [])
+
+        assert "PROPOSED SPRINT TASKS" in result
+        assert "PROPOSED FOR CONFIGURATION" not in result
+
+
 class TestTaskTitle:
     def test_first_sentence_extracted(self) -> None:
         """Extract the first sentence from an excerpt."""

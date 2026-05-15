@@ -57,9 +57,12 @@ def _format_proposal(
     lines.append(f"Generated: {generated_at}")
     lines.append("")
 
-    # BLOCK 1: PROPOSED SPRINT TASKS
+    # BLOCK 1: PROPOSED SPRINT TASKS (or PROPOSED FOR CONFIGURATION in Discovery phase)
     lines.append("──────────────────────────────────────────────────")
-    lines.append("BLOCK 1: PROPOSED SPRINT TASKS")
+    if header.phase == "Discovery":
+        lines.append("BLOCK 1: PROPOSED FOR CONFIGURATION (Days 4–7)")
+    else:
+        lines.append("BLOCK 1: PROPOSED SPRINT TASKS")
     lines.append("──────────────────────────────────────────────────")
     lines.append("")
 
