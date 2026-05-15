@@ -16,13 +16,11 @@ class ClassificationError(Exception):
 
 class _GenerateResponse(Protocol):
     @property
-    def text(self) -> str:
-        ...
+    def text(self) -> str: ...
 
 
 class _GeneratorProtocol(Protocol):
-    def generate_content(self, prompt: str) -> _GenerateResponse:
-        ...
+    def generate_content(self, prompt: str) -> _GenerateResponse: ...
 
 
 def _extract_json(text: str) -> dict[str, Any]:
@@ -95,9 +93,7 @@ def _build_default_client() -> _GeneratorProtocol:
     """
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        raise EnvironmentError(
-            "GEMINI_API_KEY is not set. Add it to your .env file."
-        )
+        raise EnvironmentError("GEMINI_API_KEY is not set. Add it to your .env file.")
 
     genai.configure(api_key=api_key)  # type: ignore[attr-defined]
     return genai.GenerativeModel("gemini-3.1-flash-lite")  # type: ignore

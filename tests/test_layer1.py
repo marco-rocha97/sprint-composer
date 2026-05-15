@@ -123,7 +123,9 @@ class TestHappyPath:
         layer2_items = result.for_layer2()
 
         assert len(layer2_items) == 2
-        assert all(s.type in (SegmentType.FIRM_REQUEST, SegmentType.LATENT_REQUEST) for s in layer2_items)
+        assert all(
+            s.type in (SegmentType.FIRM_REQUEST, SegmentType.LATENT_REQUEST) for s in layer2_items
+        )
 
 
 class TestErrorCases:
@@ -139,9 +141,7 @@ class TestErrorCases:
     def test_unknown_type_in_response_raises_classification_error(self) -> None:
         """Unknown type value raises ClassificationError with type named."""
         segments = ["A"]
-        responses = [
-            '{"type": "wish_list", "confidence": "HIGH", "reasoning": "Invalid type."}'
-        ]
+        responses = ['{"type": "wish_list", "confidence": "HIGH", "reasoning": "Invalid type."}']
         client = MockGeminiClient(responses)
 
         with pytest.raises(ClassificationError) as exc_info:
@@ -171,9 +171,7 @@ class TestConfidenceValues:
     def test_high_confidence(self) -> None:
         """HIGH confidence is correctly parsed."""
         segments = ["A"]
-        responses = [
-            '{"type": "firm_request", "confidence": "HIGH", "reasoning": "Clear."}'
-        ]
+        responses = ['{"type": "firm_request", "confidence": "HIGH", "reasoning": "Clear."}']
         client = MockGeminiClient(responses)
 
         result = classify_transcript(segments, client=client)
@@ -183,9 +181,7 @@ class TestConfidenceValues:
     def test_medium_confidence(self) -> None:
         """MEDIUM confidence is correctly parsed."""
         segments = ["A"]
-        responses = [
-            '{"type": "decision", "confidence": "MEDIUM", "reasoning": "Somewhat clear."}'
-        ]
+        responses = ['{"type": "decision", "confidence": "MEDIUM", "reasoning": "Somewhat clear."}']
         client = MockGeminiClient(responses)
 
         result = classify_transcript(segments, client=client)
@@ -195,9 +191,7 @@ class TestConfidenceValues:
     def test_low_confidence(self) -> None:
         """LOW confidence is correctly parsed."""
         segments = ["A"]
-        responses = [
-            '{"type": "open_question", "confidence": "LOW", "reasoning": "Unclear."}'
-        ]
+        responses = ['{"type": "open_question", "confidence": "LOW", "reasoning": "Unclear."}']
         client = MockGeminiClient(responses)
 
         result = classify_transcript(segments, client=client)
@@ -214,6 +208,7 @@ class TestAccuracyAgainstTaxonomy:
 
         # Call real Gemini API
         from sprint_composer.layer1 import classify_transcript
+
         result = classify_transcript(segments)
 
         # Load taxonomy
@@ -230,4 +225,6 @@ class TestAccuracyAgainstTaxonomy:
 
         # Assert at least 80% match (7/8 for fixture)
         accuracy = matches / len(result.segments) if result.segments else 0
-        assert accuracy >= 0.80, f"Accuracy {accuracy:.1%} ({matches}/{len(result.segments)}) below 80% threshold"
+        assert accuracy >= 0.80, (
+            f"Accuracy {accuracy:.1%} ({matches}/{len(result.segments)}) below 80% threshold"
+        )

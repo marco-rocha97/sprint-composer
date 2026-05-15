@@ -11,10 +11,12 @@ class SegmentType(str, Enum):
 
 
 # Segment types that proceed to Layer 2 enrichment
-L2_ELIGIBLE: frozenset[SegmentType] = frozenset({
-    SegmentType.FIRM_REQUEST,
-    SegmentType.LATENT_REQUEST,
-})
+L2_ELIGIBLE: frozenset[SegmentType] = frozenset(
+    {
+        SegmentType.FIRM_REQUEST,
+        SegmentType.LATENT_REQUEST,
+    }
+)
 
 
 class Confidence(str, Enum):

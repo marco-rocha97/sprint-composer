@@ -85,9 +85,7 @@ class TestTranscriptBody:
 
         for entry in taxonomy["segments"]:
             excerpt = entry["excerpt"]
-            assert (
-                excerpt in transcript_text
-            ), f"Excerpt '{excerpt}' not found in transcript"
+            assert excerpt in transcript_text, f"Excerpt '{excerpt}' not found in transcript"
 
     def test_segment_count_matches_taxonomy(self):
         """Count of body segments equals count of taxonomy entries."""
@@ -98,9 +96,9 @@ class TestTranscriptBody:
         with open(TAXONOMY_PATH) as f:
             taxonomy = json.load(f)
 
-        assert len(body_segments) == len(
-            taxonomy["segments"]
-        ), f"Body has {len(body_segments)} segments but taxonomy has {len(taxonomy['segments'])} entries"
+        assert len(body_segments) == len(taxonomy["segments"]), (
+            f"Body has {len(body_segments)} segments but taxonomy has {len(taxonomy['segments'])} entries"
+        )
 
 
 class TestReferenceBank:
@@ -127,7 +125,9 @@ class TestReferenceBank:
         required_fields = {"id", "name", "keywords", "effort_days", "effort_confidence", "blockers"}
         for project in bank["projects"]:
             for task in project["tasks"]:
-                assert required_fields.issubset(task.keys()), f"Task {task.get('id', 'unknown')} missing required fields"
+                assert required_fields.issubset(task.keys()), (
+                    f"Task {task.get('id', 'unknown')} missing required fields"
+                )
 
     def test_effort_confidence_is_valid(self):
         """Effort confidence is one of HIGH, MEDIUM, LOW."""
