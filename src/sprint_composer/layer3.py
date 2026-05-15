@@ -39,7 +39,7 @@ KHAL_PHASES: dict[str, str] = {
         "Requirements gathering, scoping, architecture decisions, stakeholder alignment "
         "(days 1–3). New features, new integrations, and major scope items are all appropriate."
     ),
-    "Setup": (
+    "Configuration": (
         "Environment setup, core integrations, initial builds, infrastructure "
         "(days 4–7). New feature development and integrations are appropriate."
     ),
@@ -104,7 +104,7 @@ Current context:
 
 Phase compatibility rules:
 - Discovery (days 1–3): new features, new integrations, and major scope items are appropriate
-- Setup (days 4–7): new feature development and core integrations are appropriate
+- Configuration (days 4–7): new feature development and core integrations are appropriate
 - Simulation (days 8–12): UAT testing and refinements to EXISTING features only — new scope is incompatible
 - Go-live (days 13–15): only critical production fixes are appropriate; new features are out-of-scope
 
