@@ -352,6 +352,81 @@ class TestExtractAllocation:
         assert len(allocations) == 1
         assert dep_order == []
 
+    def test_scope_creep_fields_extracted_for_out_of_sprint(self) -> None:
+        """Scope creep fields are extracted from out-of-sprint allocation."""
+        response = """{
+          "allocations": [
+            {
+              "segment_id": "S01",
+              "sprint_allocation": "out_of_sprint",
+              "moscow": "Could",
+              "allocation_confidence": "LOW",
+              "needs_lead_decision": false,
+              "lead_decision_reason": "",
+              "allocation_reasoning": "Out of phase.",
+              "scope_creep_category": "information_gap",
+              "scope_creep_impact": "Accepting without vendor documentation risks hidden effort and scope inflation."
+            }
+          ],
+          "dependency_order": []
+        }"""
+        expected_ids = ["S01"]
+
+        allocations, dep_order = _extract_allocation(response, expected_ids)
+
+        assert allocations[0]["scope_creep_category"] == "information_gap"
+        assert (
+            allocations[0]["scope_creep_impact"]
+            == "Accepting without vendor documentation risks hidden effort and scope inflation."
+        )
+
+    def test_scope_creep_category_defaults_to_empty_string_when_absent(self) -> None:
+        """Absent scope_creep fields default to empty string."""
+        response = """{
+          "allocations": [
+            {
+              "segment_id": "S01",
+              "sprint_allocation": "in_sprint",
+              "moscow": "Must",
+              "allocation_confidence": "HIGH",
+              "needs_lead_decision": false,
+              "lead_decision_reason": "",
+              "allocation_reasoning": "In phase."
+            }
+          ],
+          "dependency_order": []
+        }"""
+        expected_ids = ["S01"]
+
+        allocations, dep_order = _extract_allocation(response, expected_ids)
+
+        assert allocations[0].get("scope_creep_category", "") == ""
+        assert allocations[0].get("scope_creep_impact", "") == ""
+
+    def test_invalid_scope_creep_category_raises_error(self) -> None:
+        """Invalid scope_creep_category raises AllocationError."""
+        response = """{
+          "allocations": [
+            {
+              "segment_id": "S01",
+              "sprint_allocation": "out_of_sprint",
+              "moscow": "Could",
+              "allocation_confidence": "LOW",
+              "needs_lead_decision": false,
+              "lead_decision_reason": "",
+              "allocation_reasoning": "X.",
+              "scope_creep_category": "totally_wrong"
+            }
+          ],
+          "dependency_order": []
+        }"""
+        expected_ids = ["S01"]
+
+        with pytest.raises(AllocationError) as exc_info:
+            _extract_allocation(response, expected_ids)
+
+        assert "scope_creep_category" in str(exc_info.value)
+
 
 class TestMergeResults:
     def test_out_of_sprint_tasks_have_zero_dependency_order(self) -> None:
@@ -545,6 +620,58 @@ class TestMergeResults:
         assert task.needs_lead_decision is False
         assert task.lead_decision_reason == ""
 
+    def test_out_of_sprint_task_carries_scope_creep_fields(self) -> None:
+        """Out-of-sprint task carries scope_creep_category and scope_creep_impact."""
+        enriched = [create_sample_enriched_segment("S01", "IoT glucose monitor")]
+        allocations = [
+            {
+                "segment_id": "S01",
+                "sprint_allocation": "out_of_sprint",
+                "moscow": "Could",
+                "allocation_confidence": "LOW",
+                "needs_lead_decision": False,
+                "lead_decision_reason": "",
+                "allocation_reasoning": "No vendor match.",
+                "scope_creep_category": "deferred_phase",
+                "scope_creep_impact": "Accepting requires vendor documentation first.",
+            }
+        ]
+        dependency_order = []
+
+        from sprint_composer.layer3 import _merge_results
+
+        result = _merge_results(enriched, allocations, dependency_order)
+
+        task = result.out_of_sprint[0]
+        assert task.scope_creep_category == "deferred_phase"
+        assert task.scope_creep_impact == "Accepting requires vendor documentation first."
+
+    def test_in_sprint_task_has_empty_scope_creep_fields(self) -> None:
+        """In-sprint task has empty scope_creep_category and scope_creep_impact."""
+        enriched = [create_sample_enriched_segment("S01", "SSO integration")]
+        allocations = [
+            {
+                "segment_id": "S01",
+                "sprint_allocation": "in_sprint",
+                "moscow": "Must",
+                "allocation_confidence": "HIGH",
+                "needs_lead_decision": False,
+                "lead_decision_reason": "",
+                "allocation_reasoning": "Critical and in phase.",
+                "scope_creep_category": "",
+                "scope_creep_impact": "",
+            }
+        ]
+        dependency_order = [{"segment_id": "S01", "position": 1}]
+
+        from sprint_composer.layer3 import _merge_results
+
+        result = _merge_results(enriched, allocations, dependency_order)
+
+        task = result.in_sprint[0]
+        assert task.scope_creep_category == ""
+        assert task.scope_creep_impact == ""
+
 
 class TestAllocateTasks:
     def test_in_sprint_task_properties(self) -> None:
@@ -687,8 +814,8 @@ class TestAllocateTasks:
 
 @pytest.mark.skipif(not os.getenv("GEMINI_API_KEY"), reason="GEMINI_API_KEY not set")
 class TestIntegration:
-    def test_s03_routes_to_out_of_sprint_on_simulation_phase(self) -> None:
-        """S03 (admin dashboard) in Simulation phase routes to out_of_sprint."""
+    def test_s01_routes_to_in_sprint_in_discovery_phase(self) -> None:
+        """S01 (SSO) in Discovery phase routes to in_sprint."""
         from sprint_composer.layer1 import classify_transcript
         from sprint_composer.layer2 import enrich_segments
 
@@ -701,18 +828,14 @@ class TestIntegration:
         # Run L2 enrichment
         l2_result = enrich_segments(l1_result)
 
-        # Run L3 allocation (Simulation, day 10)
-        l3_result = allocate_tasks(l2_result, "Simulation", 10)
+        # Run L3 allocation (Discovery, day 2)
+        l3_result = allocate_tasks(l2_result, "Discovery", 2)
 
-        s03_tasks = [t for t in l3_result.out_of_sprint if t.segment_id == "S03"]
-        if s03_tasks:
-            assert len(s03_tasks) == 1
-            task = s03_tasks[0]
-            assert task.sprint_allocation == SprintAllocation.OUT_OF_SPRINT
-            assert (
-                "Simulation" in task.allocation_reasoning
-                or "phase" in task.allocation_reasoning.lower()
-            )
+        s01_tasks = [t for t in l3_result.in_sprint if t.segment_id == "S01"]
+        if s01_tasks:
+            assert len(s01_tasks) == 1
+            task = s01_tasks[0]
+            assert task.sprint_allocation == SprintAllocation.IN_SPRINT
 
     def test_s01_routes_to_in_sprint_with_must_priority(self) -> None:
         """S01 (SSO) routes to in_sprint with Must priority."""
@@ -722,7 +845,7 @@ class TestIntegration:
         segments = get_fixture_segments()
         l1_result = classify_transcript(segments)
         l2_result = enrich_segments(l1_result)
-        l3_result = allocate_tasks(l2_result, "Simulation", 10)
+        l3_result = allocate_tasks(l2_result, "Discovery", 2)
 
         s01_tasks = [t for t in l3_result.in_sprint if t.segment_id == "S01"]
         if s01_tasks:
@@ -738,7 +861,7 @@ class TestIntegration:
         segments = get_fixture_segments()
         l1_result = classify_transcript(segments)
         l2_result = enrich_segments(l1_result)
-        l3_result = allocate_tasks(l2_result, "Simulation", 10)
+        l3_result = allocate_tasks(l2_result, "Discovery", 2)
 
         all_tasks = l3_result.in_sprint + l3_result.out_of_sprint
         decision_or_low = any(
@@ -754,7 +877,7 @@ class TestIntegration:
         segments = get_fixture_segments()
         l1_result = classify_transcript(segments)
         l2_result = enrich_segments(l1_result)
-        l3_result = allocate_tasks(l2_result, "Simulation", 10)
+        l3_result = allocate_tasks(l2_result, "Discovery", 2)
 
         in_tasks = l3_result.in_sprint
         if len(in_tasks) > 1:
@@ -769,7 +892,7 @@ class TestIntegration:
         segments = get_fixture_segments()
         l1_result = classify_transcript(segments)
         l2_result = enrich_segments(l1_result)
-        l3_result = allocate_tasks(l2_result, "Simulation", 10)
+        l3_result = allocate_tasks(l2_result, "Discovery", 2)
 
         expected_ids = {seg.segment_id for seg in l2_result.enriched}
         result_ids = {t.segment_id for t in l3_result.in_sprint + l3_result.out_of_sprint}

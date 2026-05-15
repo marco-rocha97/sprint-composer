@@ -40,6 +40,8 @@ def create_sample_allocated_task(
     gap_questions: list[str] | None = None,
     needs_lead_decision: bool = False,
     lead_decision_reason: str = "",
+    scope_creep_category: str = "",
+    scope_creep_impact: str = "",
 ) -> AllocatedTask:
     """Helper to create an AllocatedTask for testing."""
     if blockers is None:
@@ -75,6 +77,8 @@ def create_sample_allocated_task(
         needs_lead_decision=needs_lead_decision,
         lead_decision_reason=lead_decision_reason,
         allocation_reasoning="Test allocation reasoning.",
+        scope_creep_category=scope_creep_category,
+        scope_creep_impact=scope_creep_impact,
     )
 
 
@@ -209,6 +213,59 @@ class TestFormatProposal:
 
         assert "⚠ Needs Lead decision:" in result
         assert "MoSCoW level uncertain" in result
+
+    def test_out_of_sprint_with_scope_creep_shows_category_and_impact(self) -> None:
+        """Out-of-sprint task with scope_creep shows Category and Impact lines."""
+        header = TranscriptHeader(day=2, phase="Discovery", participants=["Alice"])
+        task = create_sample_allocated_task(
+            "S04",
+            "IoT glucose monitor...",
+            sprint_allocation=SprintAllocation.OUT_OF_SPRINT,
+            scope_creep_category="information_gap",
+            scope_creep_impact="Accepting without vendor documentation risks hidden effort.",
+        )
+        l3_result = Layer3Result(in_sprint=[], out_of_sprint=[task])
+
+        result = _format_proposal(TRANSCRIPT_PATH, header, l3_result, [], [], [], [])
+
+        assert "Category: information_gap" in result
+        assert "Accepting without vendor documentation" in result
+
+    def test_out_of_sprint_without_scope_creep_omits_category_and_impact_lines(
+        self,
+    ) -> None:
+        """Out-of-sprint task without scope_creep omits Category and Impact lines."""
+        header = TranscriptHeader(day=10, phase="Simulation", participants=["Alice"])
+        task = create_sample_allocated_task(
+            "S03",
+            "Build dashboard...",
+            sprint_allocation=SprintAllocation.OUT_OF_SPRINT,
+            scope_creep_category="",
+            scope_creep_impact="",
+        )
+        l3_result = Layer3Result(in_sprint=[], out_of_sprint=[task])
+
+        result = _format_proposal(TRANSCRIPT_PATH, header, l3_result, [], [], [], [])
+
+        assert "Category:" not in result
+        assert "Impact:" not in result
+
+    def test_in_sprint_task_never_shows_scope_creep_fields(self) -> None:
+        """In-sprint task never shows scope_creep fields even if non-empty."""
+        header = TranscriptHeader(day=2, phase="Discovery", participants=["Alice"])
+        task = create_sample_allocated_task(
+            "S01",
+            "Implement SSO...",
+            sprint_allocation=SprintAllocation.IN_SPRINT,
+            scope_creep_category="prerequisite_risk",
+            scope_creep_impact="Some impact.",
+        )
+        l3_result = Layer3Result(in_sprint=[task], out_of_sprint=[])
+
+        result = _format_proposal(TRANSCRIPT_PATH, header, l3_result, [], [], [], [])
+
+        assert "Category:" not in result
+        assert "prerequisite_risk" not in result
 
 
 class TestBuildJsonArtifact:
@@ -722,6 +779,87 @@ class TestFormatExplain:
 
         # The excerpt should appear verbatim in the output
         assert long_excerpt in output
+
+    def test_out_of_sprint_task_with_scope_creep_shows_scope_creep_lines(self) -> None:
+        """Out-of-sprint task with scope_creep shows Scope creep and Impact lines in Layer 3."""
+        task_data = {
+            "segment_id": "S04",
+            "excerpt": "The nursing team raised an interesting request during the UAT sessions about\nconsolidating the three scheduling systems into one interface.",
+            "type": "latent_request",
+            "l1_confidence": "MEDIUM",
+            "l1_reasoning": "Latent pain around workflow fragmentation.",
+            "reference_match": None,
+            "effort": "estimate not available",
+            "l2_confidence": "LOW",
+            "blockers": [],
+            "gap_questions": ["What is scope?"],
+            "enrichment_reasoning": "No close reference match.",
+            "moscow": "Should",
+            "sprint_allocation": "out_of_sprint",
+            "allocation_confidence": "LOW",
+            "dependency_order": 0,
+            "needs_lead_decision": False,
+            "lead_decision_reason": "",
+            "allocation_reasoning": "Out of phase.",
+            "scope_creep_category": "deferred_phase",
+            "scope_creep_impact": "Accepting would extend go-live by 1 week.",
+        }
+
+        output = _format_explain("S04", task_data, "Out of sprint")
+
+        assert "Layer 3 — Allocation" in output
+        assert "Scope creep: deferred_phase" in output
+        assert "Impact:      Accepting would extend go-live by 1 week." in output
+
+    def test_out_of_sprint_task_without_scope_creep_omits_scope_creep_lines(self) -> None:
+        """Out-of-sprint task without scope_creep omits Scope creep and Impact lines."""
+        task_data = {
+            "segment_id": "S04",
+            "excerpt": "Some request.",
+            "type": "firm_request",
+            "l1_confidence": "MEDIUM",
+            "l1_reasoning": "Clear request.",
+            "reference_match": None,
+            "effort": "estimate not available",
+            "l2_confidence": "LOW",
+            "blockers": [],
+            "gap_questions": [],
+            "enrichment_reasoning": "No match.",
+            "moscow": "Could",
+            "sprint_allocation": "out_of_sprint",
+            "allocation_confidence": "LOW",
+            "dependency_order": 0,
+            "needs_lead_decision": False,
+            "lead_decision_reason": "",
+            "allocation_reasoning": "Out of phase.",
+            "scope_creep_category": "",
+            "scope_creep_impact": "",
+        }
+
+        output = _format_explain("S04", task_data, "Out of sprint")
+
+        assert "Scope creep:" not in output
+        assert "Impact:" not in output
+
+
+class TestTaskToDict:
+    def test_task_to_dict_includes_scope_creep_fields(self) -> None:
+        """_task_to_dict includes scope_creep_category and scope_creep_impact."""
+        from sprint_composer.cli import _task_to_dict
+
+        task = create_sample_allocated_task(
+            "S01",
+            "Request.",
+            scope_creep_category="prerequisite_risk",
+            scope_creep_impact="Some impact.",
+        )
+
+        task_dict = _task_to_dict(task)
+
+        assert "scope_creep_category" in task_dict
+        assert task_dict["scope_creep_category"] == "prerequisite_risk"
+        assert "scope_creep_impact" in task_dict
+        assert task_dict["scope_creep_impact"] == "Some impact."
 
 
 class TestCmdExplain:

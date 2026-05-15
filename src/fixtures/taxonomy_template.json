@@ -17,7 +17,7 @@
       "segment_id": "S03",
       "excerpt": "We should also consider building",
       "expected_type": "firm_request",
-      "notes": "New reporting dashboard request; represents scope introduced on day 10 Simulation phase (out-of-phase)"
+      "notes": "New reporting dashboard request; analytics work is appropriate scope in Discovery phase but borderline fit against sprint capacity"
     },
     {
       "segment_id": "S04",

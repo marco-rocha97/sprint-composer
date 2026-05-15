@@ -1,11 +1,14 @@
 import json
 import os
+import warnings
 from pathlib import Path
 from typing import Any, Protocol
 
-import google.generativeai as genai
+warnings.filterwarnings("ignore", category=FutureWarning)
 
-from sprint_composer.models import (
+import google.generativeai as genai  # noqa: E402
+
+from sprint_composer.models import (  # noqa: E402
     ClassifiedSegment,
     Confidence,
     EnrichedSegment,

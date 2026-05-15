@@ -113,6 +113,8 @@ class AllocatedTask:
     needs_lead_decision: bool
     lead_decision_reason: str
     allocation_reasoning: str
+    scope_creep_category: str
+    scope_creep_impact: str
 
 
 @dataclass

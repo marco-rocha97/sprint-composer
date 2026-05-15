@@ -66,6 +66,13 @@ class TestTranscriptHeader:
         header = parse_transcript_header(text)
         assert len(header["participants"]) > 0
 
+    def test_fixture_is_discovery_phase_on_day_two(self):
+        """Fixture is on Day 2 Discovery phase."""
+        text = TRANSCRIPT_PATH.read_text()
+        header = parse_transcript_header(text)
+        assert header["phase"] == "Discovery"
+        assert header["day"] == 2
+
 
 class TestTranscriptBody:
     def test_at_least_one_segment_per_type(self):
