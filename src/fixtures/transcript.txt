@@ -1,5 +1,5 @@
-day: 10
-phase: Simulation
+day: 2
+phase: Discovery
 participants: [Dr. Sarah Chen, James Rodriguez, Maria Gonzalez, Mike Thompson]
 ---
 We need to implement Single Sign-On integration with our Active Directory to streamline provider access. Currently each clinician logs in separately to the patient portal, which creates friction during shift changes. The Active Directory is already the source of truth for all hospital staff identity management, so we should connect the portal directly to that system. This would eliminate duplicate password management and speed up access revocation when someone leaves the organization.
