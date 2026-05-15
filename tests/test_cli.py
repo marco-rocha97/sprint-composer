@@ -602,7 +602,10 @@ class TestFormatExplain:
         assert "Layer 1 — Classification" in output
         assert "Layer 2 — Enrichment" in output
         assert "Layer 3 — Allocation" in output
-        assert "Single Sign-On via LDAP/Active Directory (Retail Loyalty Program Digital Integration)" in output
+        assert (
+            "Single Sign-On via LDAP/Active Directory (Retail Loyalty Program Digital Integration)"
+            in output
+        )
         assert "5 days" in output
         assert "Identity provider configuration; Network security group rules" in output
 
@@ -870,9 +873,7 @@ class TestCmdExplain:
 
 
 class TestAppExplainSubcommand:
-    def test_explain_subcommand_registered_and_dispatches(
-        self, monkeypatch: any
-    ) -> None:
+    def test_explain_subcommand_registered_and_dispatches(self, monkeypatch: any) -> None:
         """explain subcommand is registered and dispatches to _cmd_explain."""
         calls = []
 
@@ -880,9 +881,7 @@ class TestAppExplainSubcommand:
             calls.append(("_cmd_explain", str(transcript_path), task_id))
 
         monkeypatch.setattr("sprint_composer.cli._cmd_explain", mock_cmd_explain)
-        monkeypatch.setattr(
-            sys, "argv", ["sprint-composer", "explain", "transcript.txt", "S01"]
-        )
+        monkeypatch.setattr(sys, "argv", ["sprint-composer", "explain", "transcript.txt", "S01"])
 
         app()
 
