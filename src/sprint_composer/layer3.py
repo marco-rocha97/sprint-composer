@@ -39,7 +39,7 @@ KHAL_PHASES: dict[str, str] = {
         "Requirements gathering, scoping, architecture decisions, stakeholder alignment "
         "(days 1–3). New features, new integrations, and major scope items are all appropriate."
     ),
-    "Setup": (
+    "Configuration": (
         "Environment setup, core integrations, initial builds, infrastructure "
         "(days 4–7). New feature development and integrations are appropriate."
     ),
@@ -81,6 +81,21 @@ def _build_allocation_prompt(enriched: list[EnrichedSegment], phase: str, day: i
 
     phase_description = KHAL_PHASES[phase]
 
+    # Discovery is a planning phase — add planning semantics note
+    discovery_note = ""
+    if phase == "Discovery":
+        discovery_note = (
+            "\nIMPORTANT — PLANNING PHASE SEMANTICS: The current phase is Discovery (days 1–3). "
+            "Discovery is a planning phase — no features are implemented during Discovery. "
+            'Classify tasks as "in_sprint" to mean "accepted into the Configuration plan (days 4–7)" '
+            "— they will be built during Configuration, not during this Discovery session. "
+            "The allocation_reasoning for in-sprint items must say 'Proposed for Configuration (days 4–7)' "
+            "rather than implying implementation during Discovery. "
+            "A task is out_of_sprint only if it is inappropriate for Configuration (e.g., needs a phase "
+            "beyond Configuration, has an unbounded information gap, or introduces scope beyond the "
+            "15-day cycle).\n"
+        )
+
     tasks_json_list = []
     for segment in enriched:
         task_dict = {
@@ -104,10 +119,10 @@ Current context:
 
 Phase compatibility rules:
 - Discovery (days 1–3): new features, new integrations, and major scope items are appropriate
-- Setup (days 4–7): new feature development and core integrations are appropriate
+- Configuration (days 4–7): new feature development and core integrations are appropriate
 - Simulation (days 8–12): UAT testing and refinements to EXISTING features only — new scope is incompatible
 - Go-live (days 13–15): only critical production fixes are appropriate; new features are out-of-scope
-
+{discovery_note}
 Tasks to allocate (each enriched with effort and blockers from historical data):
 {tasks_json}
 

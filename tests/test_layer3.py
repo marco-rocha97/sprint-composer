@@ -120,7 +120,7 @@ class TestBuildAllocationPrompt:
             create_sample_enriched_segment("S02", "We need reporting"),
             create_sample_enriched_segment("S03", "We need auth"),
         ]
-        prompt = _build_allocation_prompt(enriched, "Setup", 5)
+        prompt = _build_allocation_prompt(enriched, "Configuration", 5)
 
         assert "S01" in prompt
         assert "S02" in prompt
@@ -152,7 +152,44 @@ class TestBuildAllocationPrompt:
 
         assert "InvalidPhase" in str(exc_info.value)
         assert "Discovery" in str(exc_info.value)
+        assert "Configuration" in str(exc_info.value)
+
+    def test_configuration_key_exists(self) -> None:
+        """Configuration key exists in KHAL_PHASES."""
+        from sprint_composer.layer3 import KHAL_PHASES
+
+        assert "Configuration" in KHAL_PHASES
+
+    def test_setup_key_does_not_exist(self) -> None:
+        """Setup key does not exist in KHAL_PHASES."""
+        from sprint_composer.layer3 import KHAL_PHASES
+
+        assert "Setup" not in KHAL_PHASES
+
+    def test_configuration_description_mentions_days_4_to_7(self) -> None:
+        """Configuration description mentions days 4 and 7."""
+        from sprint_composer.layer3 import KHAL_PHASES
+
+        description = KHAL_PHASES["Configuration"]
+        assert "4" in description
+        assert "7" in description
+
+    def test_unknown_phase_raises_allocation_error(self) -> None:
+        """Calling with Setup phase raises AllocationError with Setup in message."""
+        enriched = [create_sample_enriched_segment("S01", "We need SSO")]
+
+        with pytest.raises(AllocationError) as exc_info:
+            _build_allocation_prompt(enriched, "Setup", 5)
+
         assert "Setup" in str(exc_info.value)
+
+    def test_prompt_contains_configuration_not_setup(self) -> None:
+        """Prompt with Configuration phase contains Configuration and not Setup."""
+        enriched = [create_sample_enriched_segment("S01", "We need SSO")]
+        prompt = _build_allocation_prompt(enriched, "Configuration", 5)
+
+        assert "Configuration" in prompt
+        assert "Setup" not in prompt
 
 
 class TestExtractAllocation:
@@ -804,7 +841,7 @@ class TestAllocateTasks:
         }"""
         client = MockGeminiClient([response_json])
 
-        result = allocate_tasks(layer2_result, "Setup", 5, client=client)
+        result = allocate_tasks(layer2_result, "Configuration", 5, client=client)
 
         task = result.in_sprint[0]
         assert task.effort == "5 days"
