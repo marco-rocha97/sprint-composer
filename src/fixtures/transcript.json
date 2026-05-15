@@ -1,0 +1,194 @@
+{
+  "metadata": {
+    "transcript_path": "/home/marco/MARCO-2/work/opportunities/khal.ai/sprint-composer/src/fixtures/transcript.txt",
+    "generated_at": "2026-05-15T16:32:07.767739+00:00",
+    "header": {
+      "day": 10,
+      "phase": "Simulation",
+      "participants": [
+        "Dr. Sarah Chen",
+        "James Rodriguez",
+        "Maria Gonzalez",
+        "Mike Thompson"
+      ]
+    }
+  },
+  "sprint_tasks": [
+    {
+      "segment_id": "S04",
+      "excerpt": "The nursing team raised an interesting request during the UAT sessions. They currently switch between three separate systems every day: the appointment scheduling system, the EHR, and the message board. The context switching is costing them significant time. We should eventually consolidate these workflows so nurses can do their job without jumping between windows constantly. This would improve their efficiency and reduce transcription errors.",
+      "type": "latent_request",
+      "l1_confidence": "HIGH",
+      "l1_reasoning": "The speaker identifies a significant pain point regarding workflow inefficiency and context switching without phrasing it as an immediate, actionable request to implement a specific feature.",
+      "reference_match": null,
+      "effort": "estimate not available",
+      "l2_confidence": "LOW",
+      "blockers": [],
+      "gap_questions": [
+        "Do the three existing systems provide documented, accessible APIs (REST/GraphQL/etc.) that allow for programmatic data retrieval and write operations?",
+        "Are there existing SSO or identity management protocols shared across these systems, or will we need to implement a new unified authentication layer?",
+        "What are the regulatory and compliance requirements (e.g., HIPAA) regarding data aggregation and the potential for a single point of failure in a consolidated interface?",
+        "Are there specific business logic constraints or 'source of truth' conflicts between the three systems that would require custom middleware to resolve before data can be presented in a unified view?"
+      ],
+      "enrichment_reasoning": "No reference match; gap questions generated to unlock estimation.",
+      "moscow": "Could",
+      "sprint_allocation": "in_sprint",
+      "allocation_confidence": "MEDIUM",
+      "dependency_order": 1,
+      "needs_lead_decision": true,
+      "lead_decision_reason": "While discovery and requirements gathering are acceptable for existing workflows, the complexity of a consolidation project requires leadership approval to initiate research.",
+      "allocation_reasoning": "As a latent request originating from UAT, we can perform discovery and analysis on the current workflow during the Simulation phase without violating scope constraints."
+    }
+  ],
+  "out_of_sprint": [
+    {
+      "segment_id": "S01",
+      "excerpt": "We need to implement Single Sign-On integration with our Active Directory to streamline provider access. Currently each clinician logs in separately to the patient portal, which creates friction during shift changes. The Active Directory is already the source of truth for all hospital staff identity management, so we should connect the portal directly to that system. This would eliminate duplicate password management and speed up access revocation when someone leaves the organization.",
+      "type": "firm_request",
+      "l1_confidence": "HIGH",
+      "l1_reasoning": "The speaker explicitly states a requirement to implement Single Sign-On integration and provides specific technical justification for this action.",
+      "reference_match": {
+        "task_id": "sso-ldap-integration",
+        "task_name": "Single Sign-On via LDAP/Active Directory",
+        "project_id": "retail-loyalty-integration",
+        "project_name": "Retail Loyalty Program Digital Integration",
+        "effort_days": 5,
+        "effort_confidence": "HIGH",
+        "blockers": [
+          "Requires LDAP server credentials and schema documentation",
+          "May need coordination with IT security for certificate pinning"
+        ],
+        "notes": "Proven integration pattern; similar project took 5 days including testing"
+      },
+      "effort": "5 days",
+      "l2_confidence": "HIGH",
+      "blockers": [
+        "Requires LDAP server credentials and schema documentation",
+        "May need coordination with IT security for certificate pinning"
+      ],
+      "gap_questions": [],
+      "enrichment_reasoning": "Matched 'Single Sign-On via LDAP/Active Directory' from Retail Loyalty Program Digital Integration (5 days); effort_confidence=HIGH from reference.",
+      "moscow": "Won't",
+      "sprint_allocation": "out_of_sprint",
+      "allocation_confidence": "HIGH",
+      "dependency_order": 0,
+      "needs_lead_decision": false,
+      "lead_decision_reason": "",
+      "allocation_reasoning": "This is a new feature integration, which is incompatible with the Simulation phase's focus on existing scope only."
+    },
+    {
+      "segment_id": "S02",
+      "excerpt": "Another critical feature is push notifications for appointment reminders. Our staff are running around the clinic and missing appointment confirmations by email alone. If patients could receive a push notification to their smartphone when their appointment is within 48 hours, we'd reduce no-shows significantly. We've been tracking this in several post-go-live retrospectives and it keeps coming up as a pain point.",
+      "type": "firm_request",
+      "l1_confidence": "HIGH",
+      "l1_reasoning": "The speaker explicitly identifies the need for push notifications as a critical feature based on documented data, framing it as a direct requirement for the project.",
+      "reference_match": {
+        "task_id": "push-notification-service",
+        "task_name": "Mobile Push Notification Delivery System",
+        "project_id": "fintech-alerts-platform",
+        "project_name": "FinTech Real-Time Alerts and Notifications",
+        "effort_days": 8,
+        "effort_confidence": "HIGH",
+        "blockers": [
+          "APNs certificates and FCM service account setup",
+          "Client SDK integration on mobile apps"
+        ],
+        "notes": "Two-way integration with iOS and Android; includes retry logic and delivery tracking"
+      },
+      "effort": "8 days",
+      "l2_confidence": "HIGH",
+      "blockers": [
+        "APNs certificates and FCM service account setup",
+        "Client SDK integration on mobile apps"
+      ],
+      "gap_questions": [],
+      "enrichment_reasoning": "Matched 'Mobile Push Notification Delivery System' from FinTech Real-Time Alerts and Notifications (8 days); effort_confidence=HIGH from reference.",
+      "moscow": "Won't",
+      "sprint_allocation": "out_of_sprint",
+      "allocation_confidence": "HIGH",
+      "dependency_order": 0,
+      "needs_lead_decision": false,
+      "lead_decision_reason": "",
+      "allocation_reasoning": "Developing a new push notification feature constitutes new scope that cannot be introduced during the Simulation phase."
+    },
+    {
+      "segment_id": "S03",
+      "excerpt": "We should also consider building a brand new reporting dashboard that will give administrators real-time visibility into utilization rates, wait times by department, and staffing efficiency. This would give leadership better insight into operations and help with quarterly planning. We could have it ready in the next cycle if we start the design now.",
+      "type": "firm_request",
+      "l1_confidence": "HIGH",
+      "l1_reasoning": "The speaker explicitly proposes building a specific feature and outlines a clear timeline for implementation, framing it as a direct requirement for operations.",
+      "reference_match": {
+        "task_id": "admin-utilization-dashboard",
+        "task_name": "Administrator Utilization and Efficiency Reporting Dashboard",
+        "project_id": "healthcare-analytics-dashboard",
+        "project_name": "Healthcare Analytics and Reporting Platform",
+        "effort_days": 10,
+        "effort_confidence": "MEDIUM",
+        "blockers": [
+          "Data warehouse must be available; schema needs confirmation",
+          "Real-time data requirements may require caching strategy"
+        ],
+        "notes": "Typically 2-week project including design, data pipeline, and UI implementation"
+      },
+      "effort": "10 days",
+      "l2_confidence": "MEDIUM",
+      "blockers": [
+        "Data warehouse must be available; schema needs confirmation",
+        "Real-time data requirements may require caching strategy"
+      ],
+      "gap_questions": [],
+      "enrichment_reasoning": "Matched 'Administrator Utilization and Efficiency Reporting Dashboard' from Healthcare Analytics and Reporting Platform (10 days); effort_confidence=MEDIUM from reference.",
+      "moscow": "Won't",
+      "sprint_allocation": "out_of_sprint",
+      "allocation_confidence": "HIGH",
+      "dependency_order": 0,
+      "needs_lead_decision": false,
+      "lead_decision_reason": "",
+      "allocation_reasoning": "Building a brand new reporting dashboard is a major new scope item incompatible with the current Simulation phase."
+    }
+  ],
+  "pending_answers": {
+    "open_questions": [
+      {
+        "segment_id": "S05",
+        "excerpt": "On a related note, we're exploring whether we can integrate with an IoT glucose monitor that a vendor has been pitching us. The device has a proprietary API that would allow us to pull readings directly from the monitor into the patient's electronic record. It's an interesting possibility but I'm not sure what the technical effort would look like on our end.",
+        "l1_confidence": "HIGH",
+        "l1_reasoning": "The speaker identifies an opportunity but explicitly highlights an uncertainty regarding the technical effort required to implement the integration."
+      },
+      {
+        "segment_id": "S07",
+        "excerpt": "One open question we need to resolve before we proceed: who owns the responsibility for HIPAA compliance sign-off on the new integration layer? Is that the Chief Medical Information Officer, the compliance team, or the infrastructure team? We need clarity on this because it affects our code review and deployment process.",
+        "l1_confidence": "HIGH",
+        "l1_reasoning": "The speaker explicitly identifies an unresolved question regarding compliance ownership that requires further information to proceed."
+      }
+    ],
+    "gap_questions": [
+      {
+        "task_segment_id": "S04",
+        "task_title": "The nursing team raised an interesting request during the UAT sessions",
+        "questions": [
+          "Do the three existing systems provide documented, accessible APIs (REST/GraphQL/etc.) that allow for programmatic data retrieval and write operations?",
+          "Are there existing SSO or identity management protocols shared across these systems, or will we need to implement a new unified authentication layer?",
+          "What are the regulatory and compliance requirements (e.g., HIPAA) regarding data aggregation and the potential for a single point of failure in a consolidated interface?",
+          "Are there specific business logic constraints or 'source of truth' conflicts between the three systems that would require custom middleware to resolve before data can be presented in a unified view?"
+        ]
+      }
+    ]
+  },
+  "decisions": [
+    {
+      "segment_id": "S06",
+      "excerpt": "We've made a firm decision: the staging environment will be used for all UAT moving forward. This gives us a safe place to test new features before they go to production, and it aligns with how the rest of the organization does testing.",
+      "l1_confidence": "HIGH",
+      "l1_reasoning": "The speaker explicitly states that a firm decision has been made regarding the use of the staging environment for UAT."
+    }
+  ],
+  "discard_appendix": [
+    {
+      "segment_id": "S08",
+      "excerpt": "By the way, did everyone have a good lunch in the cafeteria today? The new salad bar is much better than the old setup.",
+      "l1_confidence": "HIGH",
+      "l1_reasoning": "The segment consists of casual social conversation about cafeteria food that has no bearing on project goals."
+    }
+  ]
+}

@@ -7,6 +7,7 @@ import pytest
 
 from sprint_composer.cli import (
     _build_json_artifact,
+    _format_explain,
     _format_proposal,
     _task_title,
     app,
@@ -24,7 +25,7 @@ from sprint_composer.models import (
 from sprint_composer.transcript import TranscriptHeader
 
 
-FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
+FIXTURES_DIR = Path(__file__).parent.parent / "src" / "fixtures"
 TRANSCRIPT_PATH = FIXTURES_DIR / "transcript.txt"
 REFERENCE_BANK_PATH = FIXTURES_DIR / "reference_bank.json"
 
@@ -559,6 +560,338 @@ class TestAppNoArgs:
         assert exc_info.value.code == 0
 
 
+class TestFormatExplain:
+    def test_task_with_reference_match(self) -> None:
+        """Task with reference match includes L1, L2, L3 sections."""
+        task_data = {
+            "segment_id": "S01",
+            "excerpt": "We need to implement Single Sign-On integration with our Active Directory\nto streamline provider access.",
+            "type": "firm_request",
+            "l1_confidence": "HIGH",
+            "l1_reasoning": "Clear, explicit request for SSO with a named technical system.",
+            "reference_match": {
+                "task_id": "sso-ldap",
+                "task_name": "Single Sign-On via LDAP/Active Directory",
+                "project_id": "retail-loyalty",
+                "project_name": "Retail Loyalty Program Digital Integration",
+                "effort_days": 5,
+                "effort_confidence": "HIGH",
+                "blockers": ["Identity provider configuration", "Network security group rules"],
+                "notes": "LDAP/AD integration.",
+            },
+            "effort": "5 days",
+            "l2_confidence": "HIGH",
+            "blockers": ["Identity provider configuration", "Network security group rules"],
+            "gap_questions": [],
+            "enrichment_reasoning": "Close match found: same technology (LDAP/AD SSO), similar integration scope.",
+            "moscow": "Must",
+            "sprint_allocation": "in_sprint",
+            "allocation_confidence": "HIGH",
+            "dependency_order": 1,
+            "needs_lead_decision": False,
+            "lead_decision_reason": "",
+            "allocation_reasoning": "SSO is a prerequisite for all authenticated workflows in Simulation.",
+        }
+
+        output = _format_explain("S01", task_data, "Proposed sprint tasks")
+
+        assert "=== Explain: S01 ===" in output
+        assert "Block: Proposed sprint tasks" in output
+        assert "Source excerpt:" in output
+        assert "Single Sign-On integration" in output
+        assert "Layer 1 — Classification" in output
+        assert "Layer 2 — Enrichment" in output
+        assert "Layer 3 — Allocation" in output
+        assert (
+            "Single Sign-On via LDAP/Active Directory (Retail Loyalty Program Digital Integration)"
+            in output
+        )
+        assert "5 days" in output
+        assert "Identity provider configuration; Network security group rules" in output
+
+    def test_task_without_reference_match(self) -> None:
+        """Task with no reference match includes gap questions and LOW confidence."""
+        task_data = {
+            "segment_id": "S04",
+            "excerpt": "The nursing team raised an interesting request during the UAT sessions about\nconsolidating the three scheduling systems into one interface.",
+            "type": "latent_request",
+            "l1_confidence": "MEDIUM",
+            "l1_reasoning": "Latent pain around workflow fragmentation; not an explicit deliverable request.",
+            "reference_match": None,
+            "effort": "estimate not available",
+            "l2_confidence": "LOW",
+            "blockers": [],
+            "gap_questions": [
+                "What is the technical scope for consolidating the three systems?",
+                "Are there vendor APIs or integration guides available for the scheduling system?",
+                "What are the acceptance criteria for this to be considered complete?",
+            ],
+            "enrichment_reasoning": "No close reference match; estimation requires scoping inputs from customer.",
+            "moscow": "Should",
+            "sprint_allocation": "in_sprint",
+            "allocation_confidence": "HIGH",
+            "dependency_order": 3,
+            "needs_lead_decision": True,
+            "lead_decision_reason": "MoSCoW level uncertain without effort estimate for scoping.",
+            "allocation_reasoning": "Workflow consolidation scope is unclear; needs Lead input on phasing.",
+        }
+
+        output = _format_explain("S04", task_data, "Proposed sprint tasks")
+
+        assert "=== Explain: S04 ===" in output
+        assert "Layer 2 — Enrichment" in output
+        assert "no match found" in output
+        assert "estimate not available" in output
+        assert "Questions to unlock estimate:" in output
+        assert "• What is the technical scope" in output
+        assert "LOW" in output
+        assert "Needs Lead decision:" in output
+        assert "MoSCoW level uncertain" in output
+
+    def test_task_with_needs_lead_decision(self) -> None:
+        """Task with needs_lead_decision=True includes the decision flag."""
+        task_data = {
+            "segment_id": "S05",
+            "excerpt": "A task requiring Lead decision.",
+            "type": "firm_request",
+            "l1_confidence": "HIGH",
+            "l1_reasoning": "Clear request.",
+            "reference_match": {
+                "task_id": "test-task",
+                "task_name": "Test Task",
+                "project_id": "test-proj",
+                "project_name": "Test Project",
+                "effort_days": 5,
+                "effort_confidence": "HIGH",
+                "blockers": [],
+                "notes": "Test note.",
+            },
+            "effort": "5 days",
+            "l2_confidence": "HIGH",
+            "blockers": [],
+            "gap_questions": [],
+            "enrichment_reasoning": "Close match found.",
+            "moscow": "Should",
+            "sprint_allocation": "in_sprint",
+            "allocation_confidence": "MEDIUM",
+            "dependency_order": 2,
+            "needs_lead_decision": True,
+            "lead_decision_reason": "Priority unclear; needs Lead input.",
+            "allocation_reasoning": "Scope requires clarification.",
+        }
+
+        output = _format_explain("S05", task_data, "Proposed sprint tasks")
+
+        assert "Needs Lead decision: Priority unclear; needs Lead input." in output
+
+    def test_non_task_entry_decision(self) -> None:
+        """Non-task entry (decision) includes L1 only, no L2/L3 section headers."""
+        task_data = {
+            "segment_id": "S06",
+            "excerpt": "We've made a firm decision: the staging environment will be used for all UAT\nmoving forward.",
+            "type": "decision",
+            "l1_confidence": "HIGH",
+            "l1_reasoning": "Firm scope decision recorded by the team.",
+        }
+
+        output = _format_explain("S06", task_data, "Recorded decisions")
+
+        assert "=== Explain: S06 ===" in output
+        assert "Block: Recorded decisions" in output
+        assert "Layer 1 — Classification" in output
+        assert "decision" in output
+        # No Layer 2 or Layer 3 section headers (but the note mentions Layer 2/3)
+        lines = output.split("\n")
+        for line in lines:
+            assert not line.startswith("Layer 2 —")
+            assert not line.startswith("Layer 3 —")
+        assert "(No Layer 2 or Layer 3" in output
+
+    def test_excerpt_verbatim_not_truncated(self) -> None:
+        """Long excerpt appears in full, not truncated."""
+        long_excerpt = "This is a very long excerpt. " * 20
+        task_data = {
+            "segment_id": "S07",
+            "excerpt": long_excerpt,
+            "type": "firm_request",
+            "l1_confidence": "HIGH",
+            "l1_reasoning": "Clear request.",
+        }
+
+        output = _format_explain("S07", task_data, "Discard appendix")
+
+        # The excerpt should appear verbatim in the output
+        assert long_excerpt in output
+
+
+class TestCmdExplain:
+    def test_json_not_found(self, capsys: any, tmp_path: Path) -> None:
+        """JSON sibling missing → exit 1 with 'No JSON artifact found' error."""
+        from sprint_composer.cli import _cmd_explain
+
+        transcript = tmp_path / "transcript.txt"
+        transcript.write_text("day: 10\nphase: Simulation\nparticipants: [Alice]\n---\nBody")
+
+        with pytest.raises(SystemExit) as exc_info:
+            _cmd_explain(transcript, "S01")
+
+        assert exc_info.value.code == 1
+        captured = capsys.readouterr()
+        assert "Error:" in captured.err
+        assert "No JSON artifact found" in captured.err
+
+    def test_json_invalid_malformed(self, capsys: any, tmp_path: Path) -> None:
+        """Malformed JSON → exit 1 with 'Cannot parse artifact' error."""
+        from sprint_composer.cli import _cmd_explain
+
+        transcript = tmp_path / "transcript.txt"
+        transcript.write_text("day: 10\nphase: Simulation\nparticipants: [Alice]\n---\nBody")
+
+        json_path = tmp_path / "transcript.json"
+        json_path.write_text("not valid json")
+
+        with pytest.raises(SystemExit) as exc_info:
+            _cmd_explain(transcript, "S01")
+
+        assert exc_info.value.code == 1
+        captured = capsys.readouterr()
+        assert "Error:" in captured.err
+        assert "Cannot parse artifact" in captured.err
+
+    def test_unknown_task_id(self, capsys: any, tmp_path: Path) -> None:
+        """Unknown task_id → exit 1 with 'Task not found' error."""
+        from sprint_composer.cli import _cmd_explain
+
+        transcript = tmp_path / "transcript.txt"
+        transcript.write_text("day: 10\nphase: Simulation\nparticipants: [Alice]\n---\nBody")
+
+        json_path = tmp_path / "transcript.json"
+        artifact = {
+            "sprint_tasks": [{"segment_id": "S01", "excerpt": "Task 1"}],
+            "out_of_sprint": [],
+            "pending_answers": {"open_questions": []},
+            "decisions": [],
+            "discard_appendix": [],
+        }
+        json_path.write_text(json.dumps(artifact))
+
+        with pytest.raises(SystemExit) as exc_info:
+            _cmd_explain(transcript, "S99")
+
+        assert exc_info.value.code == 1
+        captured = capsys.readouterr()
+        assert "Error:" in captured.err
+        assert "S99" in captured.err
+        assert "not found" in captured.err
+
+    def test_happy_path_sprint_task(self, capsys: any, tmp_path: Path) -> None:
+        """Happy path: sprint_task found → stdout contains Layer 1, 2, 3."""
+        from sprint_composer.cli import _cmd_explain
+
+        transcript = tmp_path / "transcript.txt"
+        transcript.write_text("day: 10\nphase: Simulation\nparticipants: [Alice]\n---\nBody")
+
+        json_path = tmp_path / "transcript.json"
+        artifact = {
+            "sprint_tasks": [
+                {
+                    "segment_id": "S01",
+                    "excerpt": "Implement SSO.",
+                    "type": "firm_request",
+                    "l1_confidence": "HIGH",
+                    "l1_reasoning": "Clear request.",
+                    "reference_match": {
+                        "task_id": "sso",
+                        "task_name": "SSO Task",
+                        "project_id": "proj1",
+                        "project_name": "Project 1",
+                        "effort_days": 5,
+                        "effort_confidence": "HIGH",
+                        "blockers": [],
+                        "notes": "Note.",
+                    },
+                    "effort": "5 days",
+                    "l2_confidence": "HIGH",
+                    "blockers": [],
+                    "gap_questions": [],
+                    "enrichment_reasoning": "Match found.",
+                    "moscow": "Must",
+                    "sprint_allocation": "in_sprint",
+                    "allocation_confidence": "HIGH",
+                    "dependency_order": 1,
+                    "needs_lead_decision": False,
+                    "lead_decision_reason": "",
+                    "allocation_reasoning": "Priority task.",
+                }
+            ],
+            "out_of_sprint": [],
+            "pending_answers": {"open_questions": []},
+            "decisions": [],
+            "discard_appendix": [],
+        }
+        json_path.write_text(json.dumps(artifact))
+
+        _cmd_explain(transcript, "S01")
+        captured = capsys.readouterr()
+
+        assert "=== Explain: S01 ===" in captured.out
+        assert "Layer 1" in captured.out
+        assert "Layer 2" in captured.out
+        assert "Layer 3" in captured.out
+
+    def test_happy_path_decision_non_task(self, capsys: any, tmp_path: Path) -> None:
+        """Happy path: decision (non-task) found → stdout contains Layer 1 only."""
+        from sprint_composer.cli import _cmd_explain
+
+        transcript = tmp_path / "transcript.txt"
+        transcript.write_text("day: 10\nphase: Simulation\nparticipants: [Alice]\n---\nBody")
+
+        json_path = tmp_path / "transcript.json"
+        artifact = {
+            "sprint_tasks": [],
+            "out_of_sprint": [],
+            "pending_answers": {"open_questions": []},
+            "decisions": [
+                {
+                    "segment_id": "S06",
+                    "excerpt": "Staging for UAT.",
+                    "type": "decision",
+                    "l1_confidence": "HIGH",
+                    "l1_reasoning": "Firm decision.",
+                }
+            ],
+            "discard_appendix": [],
+        }
+        json_path.write_text(json.dumps(artifact))
+
+        _cmd_explain(transcript, "S06")
+        captured = capsys.readouterr()
+
+        assert "=== Explain: S06 ===" in captured.out
+        assert "Layer 1" in captured.out
+        assert "(No Layer 2 or Layer 3" in captured.out
+
+
+class TestAppExplainSubcommand:
+    def test_explain_subcommand_registered_and_dispatches(self, monkeypatch: any) -> None:
+        """explain subcommand is registered and dispatches to _cmd_explain."""
+        calls = []
+
+        def mock_cmd_explain(transcript_path: Path, task_id: str) -> None:
+            calls.append(("_cmd_explain", str(transcript_path), task_id))
+
+        monkeypatch.setattr("sprint_composer.cli._cmd_explain", mock_cmd_explain)
+        monkeypatch.setattr(sys, "argv", ["sprint-composer", "explain", "transcript.txt", "S01"])
+
+        app()
+
+        # Should dispatch to _cmd_explain with correct args
+        assert len(calls) == 1
+        assert calls[0][0] == "_cmd_explain"
+        assert "transcript.txt" in calls[0][1]
+        assert calls[0][2] == "S01"
+
+
 @pytest.mark.skipif(not os.getenv("GEMINI_API_KEY"), reason="GEMINI_API_KEY not set")
 class TestIntegration:
     def test_full_pipeline_routing(self, capsys: any, tmp_path: Path) -> None:
@@ -635,3 +968,61 @@ class TestIntegration:
         total_input = len(segments)
 
         assert total_in_json == total_input
+
+    def test_explain_s03_out_of_sprint(self, capsys: any, tmp_path: Path) -> None:
+        """Full pipeline: run → explain S03 (out-of-sprint) → demo criterion 4."""
+        from sprint_composer.cli import _cmd_run, _cmd_explain
+
+        transcript = tmp_path / "transcript.txt"
+        transcript.write_text(TRANSCRIPT_PATH.read_text())
+
+        _cmd_run(transcript)
+
+        # Reset capsys to get clean output for explain
+        capsys.readouterr()
+
+        _cmd_explain(transcript, "S03")
+        captured = capsys.readouterr()
+
+        # S03 is the admin dashboard, should be out of sprint
+        assert "=== Explain: S03 ===" in captured.out
+        assert "Out of sprint" in captured.out
+        assert "Layer 3" in captured.out
+
+    def test_explain_s04_low_confidence_no_match(self, capsys: any, tmp_path: Path) -> None:
+        """Full pipeline: run → explain S04 (LOW confidence, no match) → demo criterion 4."""
+        from sprint_composer.cli import _cmd_run, _cmd_explain
+
+        transcript = tmp_path / "transcript.txt"
+        transcript.write_text(TRANSCRIPT_PATH.read_text())
+
+        _cmd_run(transcript)
+
+        # Reset capsys to get clean output for explain
+        capsys.readouterr()
+
+        _cmd_explain(transcript, "S04")
+        captured = capsys.readouterr()
+
+        # S04 should have no match found (if it has gap questions)
+        assert "=== Explain: S04 ===" in captured.out
+        # Check for either no match or low confidence indicators
+        assert ("no match found" in captured.out) or ("LOW" in captured.out)
+
+    def test_explain_unknown_id_after_valid_run(self, capsys: any, tmp_path: Path) -> None:
+        """explain with unknown ID after valid run → exit 1."""
+        from sprint_composer.cli import _cmd_run, _cmd_explain
+
+        transcript = tmp_path / "transcript.txt"
+        transcript.write_text(TRANSCRIPT_PATH.read_text())
+
+        _cmd_run(transcript)
+
+        with pytest.raises(SystemExit) as exc_info:
+            _cmd_explain(transcript, "S99")
+
+        assert exc_info.value.code == 1
+        captured = capsys.readouterr()
+        assert "Error:" in captured.err
+        assert "S99" in captured.err
+        assert "not found" in captured.err

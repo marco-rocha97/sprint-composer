@@ -3,7 +3,7 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 
 from sprint_composer.layer1 import classify_transcript
 from sprint_composer.layer2 import enrich_segments
@@ -22,7 +22,7 @@ def _progress(msg: str) -> None:
     print(msg, file=sys.stderr)
 
 
-def _die(msg: str) -> None:
+def _die(msg: str) -> NoReturn:
     """Print 'Error: <msg>' to stderr and sys.exit(1)."""
     print(f"Error: {msg}", file=sys.stderr)
     sys.exit(1)
@@ -266,6 +266,93 @@ def _task_to_dict(task: AllocatedTask) -> dict[str, Any]:
     }
 
 
+def _format_explain(task_id: str, task_data: dict[str, Any], block: str) -> str:
+    """
+    Format the explain output for a single segment.
+
+    For sprint_tasks and out_of_sprint: includes L1, L2, and L3 sections.
+    For other blocks (decisions, open_questions, discard_appendix): includes L1 section only,
+    with a note that L2/L3 were not applied.
+    """
+    lines: list[str] = []
+    lines.append(f"=== Explain: {task_id} ===")
+    lines.append(f"Block: {block}")
+    lines.append("")
+
+    # Source excerpt — always present, verbatim, indented with 2 spaces
+    lines.append("Source excerpt:")
+    excerpt_lines = task_data["excerpt"].split("\n")
+    for line in excerpt_lines:
+        lines.append(f"  {line}")
+    lines.append("")
+
+    # Layer 1 — always present
+    lines.append("Layer 1 — Classification")
+    lines.append(f"  Type:       {task_data['type']}")
+    lines.append(f"  Confidence: {task_data['l1_confidence']}")
+    lines.append(f"  Reasoning:  {task_data['l1_reasoning']}")
+    lines.append("")
+
+    # Check if this is a task entry (has 'moscow' key) or non-task entry
+    is_task = "moscow" in task_data
+
+    if is_task:
+        # Layer 2 — Enrichment
+        lines.append("Layer 2 — Enrichment")
+
+        # Reference field
+        if task_data.get("reference_match"):
+            ref = task_data["reference_match"]
+            lines.append(f"  Reference:  {ref['task_name']} ({ref['project_name']})")
+        else:
+            lines.append("  Reference:  no match found")
+
+        lines.append(f"  Effort:     {task_data['effort']}")
+        lines.append(f"  Confidence: {task_data['l2_confidence']}")
+
+        # Blockers field
+        blockers = task_data.get("blockers", [])
+        if blockers:
+            blockers_str = "; ".join(blockers)
+            lines.append(f"  Blockers:   {blockers_str}")
+        else:
+            lines.append("  Blockers:   (none)")
+
+        # Gap questions — only when present
+        gap_questions = task_data.get("gap_questions", [])
+        if gap_questions:
+            lines.append("  Questions to unlock estimate:")
+            for q in gap_questions:
+                lines.append(f"    • {q}")
+
+        lines.append(f"  Reasoning:  {task_data['enrichment_reasoning']}")
+        lines.append("")
+
+        # Layer 3 — Allocation
+        lines.append("Layer 3 — Allocation")
+        lines.append(f"  MoSCoW:     {task_data['moscow']}")
+
+        # Sprint field
+        sprint_alloc = task_data.get("sprint_allocation")
+        sprint_display = "In sprint" if sprint_alloc == "in_sprint" else "Out of sprint"
+        lines.append(f"  Sprint:     {sprint_display}")
+
+        lines.append(f"  Confidence: {task_data['allocation_confidence']}")
+        lines.append(f"  Order:      {task_data['dependency_order']}")
+
+        # Needs Lead decision — only when True
+        if task_data.get("needs_lead_decision"):
+            lines.append(f"  Needs Lead decision: {task_data['lead_decision_reason']}")
+
+        lines.append(f"  Reasoning:  {task_data['allocation_reasoning']}")
+
+    else:
+        # Non-task entry — only Layer 1, no Layer 2/3
+        lines.append("(No Layer 2 or Layer 3 — segment was not enriched or allocated)")
+
+    return "\n".join(lines)
+
+
 def _cmd_run(transcript_path: Path) -> None:
     """
     Orchestrate the full pipeline and emit the 5-block proposal.
@@ -372,13 +459,79 @@ def _cmd_run(transcript_path: Path) -> None:
     print(f"\nJSON artifact written to: {json_path}")
 
 
+def _cmd_explain(transcript_path: Path, task_id: str) -> None:
+    """
+    Load the JSON sibling of transcript_path and print the explain output for task_id.
+
+    Derives json_path = transcript_path.with_suffix(".json").
+    Searches all five JSON blocks for a segment with segment_id == task_id.
+    Prints formatted explain output to stdout.
+
+    All user-facing errors print 'Error: <named message>' to stderr and exit 1.
+    """
+    # Step 1: Derive json_path
+    json_path = transcript_path.with_suffix(".json")
+
+    # Step 2: Check json_path exists
+    if not json_path.exists():
+        _die(
+            f"No JSON artifact found at '{json_path}'. "
+            f"Run 'sprint-composer run {transcript_path}' first."
+        )
+
+    # Step 3: Read json_path
+    try:
+        text = json_path.read_text()
+    except OSError as e:
+        _die(f"Cannot read artifact '{json_path}': {e}")
+
+    # Step 4: Parse JSON
+    try:
+        artifact = json.loads(text)
+    except json.JSONDecodeError as e:
+        _die(f"Cannot parse artifact '{json_path}': {e}")
+
+    # Step 5: Search blocks in order
+    blocks_to_search = [
+        (artifact["sprint_tasks"], "Proposed sprint tasks"),
+        (artifact["out_of_sprint"], "Out of sprint"),
+        (artifact["pending_answers"]["open_questions"], "Pending customer answers"),
+        (artifact["decisions"], "Recorded decisions"),
+        (artifact["discard_appendix"], "Discard appendix"),
+    ]
+
+    task_data = None
+    block_name = None
+
+    for block_list, display_name in blocks_to_search:
+        for item in block_list:
+            if item.get("segment_id") == task_id:
+                task_data = item
+                block_name = display_name
+                break
+        if task_data is not None:
+            break
+
+    # Step 6: If no match found
+    if task_data is None:
+        _die(
+            f"Task '{task_id}' not found in '{json_path}'. "
+            f"Check the proposal output for valid task IDs (e.g. S01, S02)."
+        )
+
+    # Step 7: Format and print
+    assert block_name is not None
+    output = _format_explain(task_id, task_data, block_name)
+    print(output)
+
+
 def app() -> None:
     """
     Entry point for the sprint-composer CLI.
 
     Subcommands:
-      run <transcript_path>   — parse header, run L1→L2→L3, emit 5-block proposal
-      (explain <task_id>      — T06 adds this subcommand here)
+      run <transcript_path>          — parse header, run L1→L2→L3, emit 5-block proposal
+      explain <transcript_path> <task_id>  — explain a single task from the last run
 
     With no subcommand: prints help + example command to stdout; exits 0.
     """
@@ -393,11 +546,18 @@ def app() -> None:
     run_parser = subparsers.add_parser("run", help="Run the pipeline on a transcript")
     run_parser.add_argument("transcript_path", type=Path, help="Path to the transcript file")
 
+    # explain subcommand
+    explain_parser = subparsers.add_parser("explain", help="Explain a task from the last run")
+    explain_parser.add_argument("transcript_path", type=Path, help="Path to the transcript file")
+    explain_parser.add_argument("task_id", help="Segment ID to explain (e.g. S01)")
+
     # parse arguments
     args = parser.parse_args()
 
     if args.command == "run":
         _cmd_run(args.transcript_path)
+    elif args.command == "explain":
+        _cmd_explain(args.transcript_path, args.task_id)
     else:
         parser.print_help()
         sys.exit(0)
