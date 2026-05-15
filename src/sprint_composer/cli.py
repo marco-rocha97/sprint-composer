@@ -3,7 +3,7 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 
 from sprint_composer.layer1 import classify_transcript
 from sprint_composer.layer2 import enrich_segments
@@ -22,7 +22,7 @@ def _progress(msg: str) -> None:
     print(msg, file=sys.stderr)
 
 
-def _die(msg: str) -> None:
+def _die(msg: str) -> NoReturn:
     """Print 'Error: <msg>' to stderr and sys.exit(1)."""
     print(f"Error: {msg}", file=sys.stderr)
     sys.exit(1)
@@ -520,6 +520,7 @@ def _cmd_explain(transcript_path: Path, task_id: str) -> None:
         )
 
     # Step 7: Format and print
+    assert block_name is not None
     output = _format_explain(task_id, task_data, block_name)
     print(output)
 
