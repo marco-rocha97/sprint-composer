@@ -76,3 +76,46 @@ class EnrichedSegment:
 @dataclass
 class Layer2Result:
     enriched: list[EnrichedSegment]
+
+
+class MoSCoW(str, Enum):
+    MUST = "Must"
+    SHOULD = "Should"
+    COULD = "Could"
+    WONT = "Won't"
+
+
+class SprintAllocation(str, Enum):
+    IN_SPRINT = "in_sprint"
+    OUT_OF_SPRINT = "out_of_sprint"
+
+
+@dataclass
+class AllocatedTask:
+    # Preserved verbatim from EnrichedSegment — never modified
+    segment_id: str
+    excerpt: str
+    type: SegmentType
+    l1_confidence: Confidence
+    l1_reasoning: str
+    reference_match: ReferenceMatch | None
+    effort: str
+    l2_confidence: Confidence
+    blockers: list[str]
+    gap_questions: list[str]
+    enrichment_reasoning: str
+
+    # Layer 3 allocation results
+    moscow: MoSCoW
+    sprint_allocation: SprintAllocation
+    allocation_confidence: Confidence
+    dependency_order: int
+    needs_lead_decision: bool
+    lead_decision_reason: str
+    allocation_reasoning: str
+
+
+@dataclass
+class Layer3Result:
+    in_sprint: list[AllocatedTask]
+    out_of_sprint: list[AllocatedTask]
