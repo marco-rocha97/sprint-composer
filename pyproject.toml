@@ -7,9 +7,14 @@ name = "sprint-composer"
 version = "0.1.0"
 description = "CLI agent that turns a raw meeting transcript into a structured 5-block sprint-plan proposal"
 requires-python = ">=3.11"
+dependencies = ["google-generativeai>=0.7"]
 
 [project.scripts]
 sprint-composer = "sprint_composer.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sprint_composer"]
+include = ["src/sprint_composer/py.typed"]
 
 [dependency-groups]
 dev = [
