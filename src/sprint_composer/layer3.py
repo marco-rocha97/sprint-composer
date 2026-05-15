@@ -118,6 +118,16 @@ For each task, determine:
 4. needs_lead_decision: true if MoSCoW level cannot be confidently assigned from available signals; false otherwise
 5. lead_decision_reason: the specific reason if needs_lead_decision is true; "" (empty string) otherwise
 6. allocation_reasoning: one sentence — why this MoSCoW and allocation
+7. scope_creep_category: if sprint_allocation is "out_of_sprint", choose one of:
+   - "prerequisite_risk": this item could be a prerequisite for in-sprint work; late acceptance creates dependency risk
+   - "deferred_v2": this is a future version feature not related to current delivery scope
+   - "deferred_phase": this is appropriate scope but belongs to a later phase in the 15-day cycle
+   - "information_gap": this cannot be scoped without additional vendor/customer information
+   If sprint_allocation is "in_sprint", use "" (empty string).
+8. scope_creep_impact: if sprint_allocation is "out_of_sprint", one sentence stating the concrete
+   business cost of accepting this scope into the current sprint.
+   Example: "Accepting would extend go-live by approximately 1 week and require additional QA cycles."
+   If sprint_allocation is "in_sprint", use "" (empty string).
 
 Also identify cross-task dependencies: if Task X must be completed before Task Y, include this in dependency_order.
 
@@ -131,7 +141,9 @@ Return ONLY a valid JSON object (no markdown, no explanation):
       "allocation_confidence": "HIGH" | "MEDIUM" | "LOW",
       "needs_lead_decision": true | false,
       "lead_decision_reason": "<reason or empty string>",
-      "allocation_reasoning": "<one sentence>"
+      "allocation_reasoning": "<one sentence>",
+      "scope_creep_category": "<prerequisite_risk|deferred_v2|deferred_phase|information_gap|>",
+      "scope_creep_impact": "<one sentence or empty string>"
     }}
   ],
   "dependency_order": [
@@ -224,6 +236,20 @@ def _extract_allocation(
                 f"Must be one of {valid_conf_values}"
             )
 
+        scope_creep_category = alloc.get("scope_creep_category", "")
+        valid_scope_creep_categories = {
+            "prerequisite_risk",
+            "deferred_v2",
+            "deferred_phase",
+            "information_gap",
+            "",
+        }
+        if scope_creep_category not in valid_scope_creep_categories:
+            raise AllocationError(
+                f"Invalid scope_creep_category for {segment_id}: '{scope_creep_category}'. "
+                f"Must be one of {valid_scope_creep_categories}"
+            )
+
     missing_ids = set(expected_ids) - returned_ids
     if missing_ids:
         raise AllocationError(f"Missing segment_ids in response: {', '.join(sorted(missing_ids))}")
@@ -312,6 +338,8 @@ def _merge_results(
             lead_reason = ""
 
         allocation_reasoning = alloc.get("allocation_reasoning", "")
+        scope_creep_category = alloc.get("scope_creep_category", "")
+        scope_creep_impact = alloc.get("scope_creep_impact", "")
 
         if sprint_allocation == SprintAllocation.OUT_OF_SPRINT:
             dependency_pos = 0
@@ -337,6 +365,8 @@ def _merge_results(
             needs_lead_decision=needs_lead,
             lead_decision_reason=lead_reason,
             allocation_reasoning=allocation_reasoning,
+            scope_creep_category=scope_creep_category,
+            scope_creep_impact=scope_creep_impact,
         )
         allocated_tasks.append(task)
 

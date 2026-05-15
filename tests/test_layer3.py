@@ -352,6 +352,81 @@ class TestExtractAllocation:
         assert len(allocations) == 1
         assert dep_order == []
 
+    def test_scope_creep_fields_extracted_for_out_of_sprint(self) -> None:
+        """Scope creep fields are extracted from out-of-sprint allocation."""
+        response = """{
+          "allocations": [
+            {
+              "segment_id": "S01",
+              "sprint_allocation": "out_of_sprint",
+              "moscow": "Could",
+              "allocation_confidence": "LOW",
+              "needs_lead_decision": false,
+              "lead_decision_reason": "",
+              "allocation_reasoning": "Out of phase.",
+              "scope_creep_category": "information_gap",
+              "scope_creep_impact": "Accepting without vendor documentation risks hidden effort and scope inflation."
+            }
+          ],
+          "dependency_order": []
+        }"""
+        expected_ids = ["S01"]
+
+        allocations, dep_order = _extract_allocation(response, expected_ids)
+
+        assert allocations[0]["scope_creep_category"] == "information_gap"
+        assert (
+            allocations[0]["scope_creep_impact"]
+            == "Accepting without vendor documentation risks hidden effort and scope inflation."
+        )
+
+    def test_scope_creep_category_defaults_to_empty_string_when_absent(self) -> None:
+        """Absent scope_creep fields default to empty string."""
+        response = """{
+          "allocations": [
+            {
+              "segment_id": "S01",
+              "sprint_allocation": "in_sprint",
+              "moscow": "Must",
+              "allocation_confidence": "HIGH",
+              "needs_lead_decision": false,
+              "lead_decision_reason": "",
+              "allocation_reasoning": "In phase."
+            }
+          ],
+          "dependency_order": []
+        }"""
+        expected_ids = ["S01"]
+
+        allocations, dep_order = _extract_allocation(response, expected_ids)
+
+        assert allocations[0].get("scope_creep_category", "") == ""
+        assert allocations[0].get("scope_creep_impact", "") == ""
+
+    def test_invalid_scope_creep_category_raises_error(self) -> None:
+        """Invalid scope_creep_category raises AllocationError."""
+        response = """{
+          "allocations": [
+            {
+              "segment_id": "S01",
+              "sprint_allocation": "out_of_sprint",
+              "moscow": "Could",
+              "allocation_confidence": "LOW",
+              "needs_lead_decision": false,
+              "lead_decision_reason": "",
+              "allocation_reasoning": "X.",
+              "scope_creep_category": "totally_wrong"
+            }
+          ],
+          "dependency_order": []
+        }"""
+        expected_ids = ["S01"]
+
+        with pytest.raises(AllocationError) as exc_info:
+            _extract_allocation(response, expected_ids)
+
+        assert "scope_creep_category" in str(exc_info.value)
+
 
 class TestMergeResults:
     def test_out_of_sprint_tasks_have_zero_dependency_order(self) -> None:
@@ -544,6 +619,58 @@ class TestMergeResults:
         task = result.in_sprint[0]
         assert task.needs_lead_decision is False
         assert task.lead_decision_reason == ""
+
+    def test_out_of_sprint_task_carries_scope_creep_fields(self) -> None:
+        """Out-of-sprint task carries scope_creep_category and scope_creep_impact."""
+        enriched = [create_sample_enriched_segment("S01", "IoT glucose monitor")]
+        allocations = [
+            {
+                "segment_id": "S01",
+                "sprint_allocation": "out_of_sprint",
+                "moscow": "Could",
+                "allocation_confidence": "LOW",
+                "needs_lead_decision": False,
+                "lead_decision_reason": "",
+                "allocation_reasoning": "No vendor match.",
+                "scope_creep_category": "deferred_phase",
+                "scope_creep_impact": "Accepting requires vendor documentation first.",
+            }
+        ]
+        dependency_order = []
+
+        from sprint_composer.layer3 import _merge_results
+
+        result = _merge_results(enriched, allocations, dependency_order)
+
+        task = result.out_of_sprint[0]
+        assert task.scope_creep_category == "deferred_phase"
+        assert task.scope_creep_impact == "Accepting requires vendor documentation first."
+
+    def test_in_sprint_task_has_empty_scope_creep_fields(self) -> None:
+        """In-sprint task has empty scope_creep_category and scope_creep_impact."""
+        enriched = [create_sample_enriched_segment("S01", "SSO integration")]
+        allocations = [
+            {
+                "segment_id": "S01",
+                "sprint_allocation": "in_sprint",
+                "moscow": "Must",
+                "allocation_confidence": "HIGH",
+                "needs_lead_decision": False,
+                "lead_decision_reason": "",
+                "allocation_reasoning": "Critical and in phase.",
+                "scope_creep_category": "",
+                "scope_creep_impact": "",
+            }
+        ]
+        dependency_order = [{"segment_id": "S01", "position": 1}]
+
+        from sprint_composer.layer3 import _merge_results
+
+        result = _merge_results(enriched, allocations, dependency_order)
+
+        task = result.in_sprint[0]
+        assert task.scope_creep_category == ""
+        assert task.scope_creep_impact == ""
 
 
 class TestAllocateTasks:
