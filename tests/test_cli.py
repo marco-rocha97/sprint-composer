@@ -545,7 +545,7 @@ class TestRunHappyPath:
         assert json_path.exists()
         artifact = json.loads(json_path.read_text())
         assert "metadata" in artifact
-        assert artifact["metadata"]["day"] is not None
+        assert artifact["metadata"]["header"]["day"] is not None
 
 
 class TestAppNoArgs:
