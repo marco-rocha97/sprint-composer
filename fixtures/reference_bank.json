@@ -1,0 +1,68 @@
+{
+  "projects": [
+    {
+      "id": "retail-loyalty-integration",
+      "name": "Retail Loyalty Program Digital Integration",
+      "industry": "retail",
+      "tasks": [
+        {
+          "id": "sso-ldap-integration",
+          "name": "Single Sign-On via LDAP/Active Directory",
+          "keywords": ["sso", "active directory", "ldap", "authentication", "identity provider"],
+          "effort_days": 5,
+          "effort_confidence": "HIGH",
+          "blockers": ["Requires LDAP server credentials and schema documentation", "May need coordination with IT security for certificate pinning"],
+          "notes": "Proven integration pattern; similar project took 5 days including testing"
+        }
+      ]
+    },
+    {
+      "id": "fintech-alerts-platform",
+      "name": "FinTech Real-Time Alerts and Notifications",
+      "industry": "fintech",
+      "tasks": [
+        {
+          "id": "push-notification-service",
+          "name": "Mobile Push Notification Delivery System",
+          "keywords": ["push notifications", "mobile alerts", "apns", "fcm", "notification delivery"],
+          "effort_days": 8,
+          "effort_confidence": "HIGH",
+          "blockers": ["APNs certificates and FCM service account setup", "Client SDK integration on mobile apps"],
+          "notes": "Two-way integration with iOS and Android; includes retry logic and delivery tracking"
+        }
+      ]
+    },
+    {
+      "id": "bpo-workflow-suite",
+      "name": "BPO Process Optimization and Workflow Consolidation",
+      "industry": "bpo",
+      "tasks": [
+        {
+          "id": "multi-system-unification",
+          "name": "Multi-System Workflow Consolidation Portal",
+          "keywords": ["workflow consolidation", "system integration", "unified interface", "portal", "multi-system"],
+          "effort_days": 12,
+          "effort_confidence": "MEDIUM",
+          "blockers": ["Requires API documentation for all three legacy systems", "Data synchronization strategy needs definition"],
+          "notes": "Nursing case: consolidating scheduling, EHR, and communications into single interface; significant UX work"
+        }
+      ]
+    },
+    {
+      "id": "healthcare-analytics-dashboard",
+      "name": "Healthcare Analytics and Reporting Platform",
+      "industry": "healthcare",
+      "tasks": [
+        {
+          "id": "admin-utilization-dashboard",
+          "name": "Administrator Utilization and Efficiency Reporting Dashboard",
+          "keywords": ["dashboard", "reporting", "analytics", "utilization", "admin reporting"],
+          "effort_days": 10,
+          "effort_confidence": "MEDIUM",
+          "blockers": ["Data warehouse must be available; schema needs confirmation", "Real-time data requirements may require caching strategy"],
+          "notes": "Typically 2-week project including design, data pipeline, and UI implementation"
+        }
+      ]
+    }
+  ]
+}
