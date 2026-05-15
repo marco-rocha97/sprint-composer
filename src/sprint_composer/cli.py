@@ -347,7 +347,11 @@ def _format_explain(task_id: str, task_data: dict[str, Any], block: str) -> str:
         lines.append(f"  Sprint:     {sprint_display}")
 
         lines.append(f"  Confidence: {task_data['allocation_confidence']}")
-        lines.append(f"  Order:      {task_data['dependency_order']}")
+        # Order is only meaningful for in-sprint tasks; show dash for out-of-sprint
+        if task_data.get("sprint_allocation") == "in_sprint":
+            lines.append(f"  Order:      {task_data['dependency_order']}")
+        else:
+            lines.append("  Order:      —")
 
         # Scope creep fields — only when sprint_allocation is out_of_sprint
         if task_data.get("scope_creep_category"):

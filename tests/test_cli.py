@@ -918,6 +918,73 @@ class TestFormatExplain:
         assert "Scope creep:" not in output
         assert "Impact:" not in output
 
+    def test_out_of_sprint_task_shows_order_dash(self) -> None:
+        """Out-of-sprint task shows 'Order: —' instead of the dependency_order integer."""
+        task_data = {
+            "segment_id": "S04",
+            "excerpt": "Some request.",
+            "type": "firm_request",
+            "l1_confidence": "MEDIUM",
+            "l1_reasoning": "Clear request.",
+            "reference_match": None,
+            "effort": "estimate not available",
+            "l2_confidence": "LOW",
+            "blockers": [],
+            "gap_questions": [],
+            "enrichment_reasoning": "No match.",
+            "moscow": "Could",
+            "sprint_allocation": "out_of_sprint",
+            "allocation_confidence": "LOW",
+            "dependency_order": 0,
+            "needs_lead_decision": False,
+            "lead_decision_reason": "",
+            "allocation_reasoning": "Out of phase.",
+            "scope_creep_category": "",
+            "scope_creep_impact": "",
+        }
+
+        output = _format_explain("S04", task_data, "Out of sprint")
+
+        assert "Order:      —" in output
+        assert "Order:      0" not in output
+
+    def test_in_sprint_task_shows_order_integer(self) -> None:
+        """In-sprint task shows 'Order: <integer>' not a dash."""
+        task_data = {
+            "segment_id": "S01",
+            "excerpt": "We need SSO.",
+            "type": "firm_request",
+            "l1_confidence": "HIGH",
+            "l1_reasoning": "Clear request.",
+            "reference_match": {
+                "task_id": "sso",
+                "task_name": "SSO Task",
+                "project_id": "proj1",
+                "project_name": "Project 1",
+                "effort_days": 5,
+                "effort_confidence": "HIGH",
+                "blockers": [],
+                "notes": "Note.",
+            },
+            "effort": "5 days",
+            "l2_confidence": "HIGH",
+            "blockers": [],
+            "gap_questions": [],
+            "enrichment_reasoning": "Match found.",
+            "moscow": "Must",
+            "sprint_allocation": "in_sprint",
+            "allocation_confidence": "HIGH",
+            "dependency_order": 1,
+            "needs_lead_decision": False,
+            "lead_decision_reason": "",
+            "allocation_reasoning": "Priority task.",
+        }
+
+        output = _format_explain("S01", task_data, "Proposed sprint tasks")
+
+        assert "Order:      1" in output
+        assert "Order:      —" not in output
+
 
 class TestTaskToDict:
     def test_task_to_dict_includes_scope_creep_fields(self) -> None:
