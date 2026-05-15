@@ -47,8 +47,8 @@ graph TD
     C --> D[Layer 1 — Classify\nGemini]
 
     D -->|firm_request\nlatent_request| E[Layer 2 — Enrich\nGemini]
-    D -->|decision| F[Block 4\nRecorded decisions]
     D -->|open_question| G[Block 3\nPending answers]
+    D -->|decision| F[Block 4\nRecorded decisions]
     D -->|noise| H[Block 5\nDiscard appendix]
 
     E -->|reference match found| I[Layer 3 — Allocate\nGemini]

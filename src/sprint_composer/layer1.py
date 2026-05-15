@@ -1,11 +1,14 @@
 import json
 import os
 import re
+import warnings
 from typing import Any, Protocol
 
-import google.generativeai as genai
+warnings.filterwarnings("ignore", category=FutureWarning)
 
-from sprint_composer.models import ClassifiedSegment, Confidence, Layer1Result, SegmentType
+import google.generativeai as genai  # noqa: E402
+
+from sprint_composer.models import ClassifiedSegment, Confidence, Layer1Result, SegmentType  # noqa: E402
 
 
 class ClassificationError(Exception):
