@@ -1,0 +1,53 @@
+{
+  "transcript": "fixtures/transcript.txt",
+  "segments": [
+    {
+      "segment_id": "S01",
+      "excerpt": "We need to implement Single Sign-",
+      "expected_type": "firm_request",
+      "notes": "Explicit request for SSO/Active Directory integration; driven by operational pain point"
+    },
+    {
+      "segment_id": "S02",
+      "excerpt": "Another critical feature is push",
+      "expected_type": "firm_request",
+      "notes": "Clear requirement for push notifications; backed by tracking data and retrospective feedback"
+    },
+    {
+      "segment_id": "S03",
+      "excerpt": "We should also consider building",
+      "expected_type": "firm_request",
+      "notes": "New reporting dashboard request; represents scope introduced on day 10 Simulation phase (out-of-phase)"
+    },
+    {
+      "segment_id": "S04",
+      "excerpt": "On a related note, we're exploring",
+      "expected_type": "firm_request",
+      "notes": "IoT glucose monitor API integration; proprietary vendor offering with unknown technical effort (estimate not available)"
+    },
+    {
+      "segment_id": "S05",
+      "excerpt": "The nursing team raised an interesting",
+      "expected_type": "latent_request",
+      "notes": "Implicit pain point (context switching between three systems); not a direct request but signals unmet need"
+    },
+    {
+      "segment_id": "S06",
+      "excerpt": "We've made a firm decision:",
+      "expected_type": "decision",
+      "notes": "Staging environment allocation for UAT; consensus decision reached in meeting"
+    },
+    {
+      "segment_id": "S07",
+      "excerpt": "One open question we need to resolve",
+      "expected_type": "open_question",
+      "notes": "Unresolved question about HIPAA compliance responsibility owner; blocks code review and deployment process"
+    },
+    {
+      "segment_id": "S08",
+      "excerpt": "By the way, did everyone have",
+      "expected_type": "noise",
+      "notes": "Off-topic social remark about cafeteria lunch; does not pertain to the project"
+    }
+  ]
+}

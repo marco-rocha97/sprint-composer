@@ -1,0 +1,19 @@
+day: 10
+phase: Simulation
+participants: [Dr. Sarah Chen, James Rodriguez, Maria Gonzalez, Mike Thompson]
+---
+We need to implement Single Sign-On integration with our Active Directory to streamline provider access. Currently each clinician logs in separately to the patient portal, which creates friction during shift changes. The Active Directory is already the source of truth for all hospital staff identity management, so we should connect the portal directly to that system. This would eliminate duplicate password management and speed up access revocation when someone leaves the organization.
+
+Another critical feature is push notifications for appointment reminders. Our staff are running around the clinic and missing appointment confirmations by email alone. If patients could receive a push notification to their smartphone when their appointment is within 48 hours, we'd reduce no-shows significantly. We've been tracking this in several post-go-live retrospectives and it keeps coming up as a pain point.
+
+We should also consider building a brand new reporting dashboard that will give administrators real-time visibility into utilization rates, wait times by department, and staffing efficiency. This would give leadership better insight into operations and help with quarterly planning. We could have it ready in the next cycle if we start the design now.
+
+The nursing team raised an interesting request during the UAT sessions. They currently switch between three separate systems every day: the appointment scheduling system, the EHR, and the message board. The context switching is costing them significant time. We should eventually consolidate these workflows so nurses can do their job without jumping between windows constantly. This would improve their efficiency and reduce transcription errors.
+
+On a related note, we're exploring whether we can integrate with an IoT glucose monitor that a vendor has been pitching us. The device has a proprietary API that would allow us to pull readings directly from the monitor into the patient's electronic record. It's an interesting possibility but I'm not sure what the technical effort would look like on our end.
+
+We've made a firm decision: the staging environment will be used for all UAT moving forward. This gives us a safe place to test new features before they go to production, and it aligns with how the rest of the organization does testing.
+
+One open question we need to resolve before we proceed: who owns the responsibility for HIPAA compliance sign-off on the new integration layer? Is that the Chief Medical Information Officer, the compliance team, or the infrastructure team? We need clarity on this because it affects our code review and deployment process.
+
+By the way, did everyone have a good lunch in the cafeteria today? The new salad bar is much better than the old setup.
