@@ -34,7 +34,7 @@ class MockGeminiClient:
 
 
 # Load fixture files for integration tests
-FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
+FIXTURES_DIR = Path(__file__).parent.parent / "src" / "fixtures"
 TRANSCRIPT_PATH = FIXTURES_DIR / "transcript.txt"
 REFERENCE_BANK_PATH = FIXTURES_DIR / "reference_bank.json"
 

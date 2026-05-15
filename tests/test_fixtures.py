@@ -3,7 +3,7 @@ from pathlib import Path
 import re
 
 
-FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
+FIXTURES_DIR = Path(__file__).parent.parent / "src" / "fixtures"
 TRANSCRIPT_PATH = FIXTURES_DIR / "transcript.txt"
 REFERENCE_BANK_PATH = FIXTURES_DIR / "reference_bank.json"
 TAXONOMY_PATH = FIXTURES_DIR / "taxonomy_template.json"

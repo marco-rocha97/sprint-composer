@@ -9,7 +9,7 @@ from sprint_composer.transcript import (
 )
 
 
-FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
+FIXTURES_DIR = Path(__file__).parent.parent / "src" / "fixtures"
 TRANSCRIPT_PATH = FIXTURES_DIR / "transcript.txt"
 
 
