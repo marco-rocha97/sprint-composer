@@ -101,7 +101,11 @@ def _format_proposal(
     for task in l3_result.out_of_sprint:
         title = _task_title(task.excerpt)
         lines.append(f"[{task.segment_id}] {title}")
-        lines.append(f"  Reason: {task.allocation_reasoning}")
+        if task.scope_creep_category:
+            lines.append(f"  Category: {task.scope_creep_category}")
+        if task.scope_creep_impact:
+            lines.append(f"  Impact:   {task.scope_creep_impact}")
+        lines.append(f"  Reason:   {task.allocation_reasoning}")
         lines.append("")
 
     # BLOCK 3: PENDING CUSTOMER ANSWERS
@@ -263,6 +267,8 @@ def _task_to_dict(task: AllocatedTask) -> dict[str, Any]:
         "needs_lead_decision": task.needs_lead_decision,
         "lead_decision_reason": task.lead_decision_reason,
         "allocation_reasoning": task.allocation_reasoning,
+        "scope_creep_category": task.scope_creep_category,
+        "scope_creep_impact": task.scope_creep_impact,
     }
 
 
@@ -339,6 +345,12 @@ def _format_explain(task_id: str, task_data: dict[str, Any], block: str) -> str:
 
         lines.append(f"  Confidence: {task_data['allocation_confidence']}")
         lines.append(f"  Order:      {task_data['dependency_order']}")
+
+        # Scope creep fields — only when sprint_allocation is out_of_sprint
+        if task_data.get("scope_creep_category"):
+            lines.append(f"  Scope creep: {task_data['scope_creep_category']}")
+        if task_data.get("scope_creep_impact"):
+            lines.append(f"  Impact:      {task_data['scope_creep_impact']}")
 
         # Needs Lead decision — only when True
         if task_data.get("needs_lead_decision"):
