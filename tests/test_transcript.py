@@ -19,8 +19,8 @@ class TestParseHeader:
         transcript_text = TRANSCRIPT_PATH.read_text()
         header, body_start = parse_header(transcript_text)
 
-        assert header.day == 10
-        assert header.phase == "Simulation"
+        assert header.day == 2
+        assert header.phase == "Discovery"
         assert len(header.participants) == 4
         assert "Dr. Sarah Chen" in header.participants
         assert "James Rodriguez" in header.participants

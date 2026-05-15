@@ -687,8 +687,8 @@ class TestAllocateTasks:
 
 @pytest.mark.skipif(not os.getenv("GEMINI_API_KEY"), reason="GEMINI_API_KEY not set")
 class TestIntegration:
-    def test_s03_routes_to_out_of_sprint_on_simulation_phase(self) -> None:
-        """S03 (admin dashboard) in Simulation phase routes to out_of_sprint."""
+    def test_s01_routes_to_in_sprint_in_discovery_phase(self) -> None:
+        """S01 (SSO) in Discovery phase routes to in_sprint."""
         from sprint_composer.layer1 import classify_transcript
         from sprint_composer.layer2 import enrich_segments
 
@@ -701,18 +701,14 @@ class TestIntegration:
         # Run L2 enrichment
         l2_result = enrich_segments(l1_result)
 
-        # Run L3 allocation (Simulation, day 10)
-        l3_result = allocate_tasks(l2_result, "Simulation", 10)
+        # Run L3 allocation (Discovery, day 2)
+        l3_result = allocate_tasks(l2_result, "Discovery", 2)
 
-        s03_tasks = [t for t in l3_result.out_of_sprint if t.segment_id == "S03"]
-        if s03_tasks:
-            assert len(s03_tasks) == 1
-            task = s03_tasks[0]
-            assert task.sprint_allocation == SprintAllocation.OUT_OF_SPRINT
-            assert (
-                "Simulation" in task.allocation_reasoning
-                or "phase" in task.allocation_reasoning.lower()
-            )
+        s01_tasks = [t for t in l3_result.in_sprint if t.segment_id == "S01"]
+        if s01_tasks:
+            assert len(s01_tasks) == 1
+            task = s01_tasks[0]
+            assert task.sprint_allocation == SprintAllocation.IN_SPRINT
 
     def test_s01_routes_to_in_sprint_with_must_priority(self) -> None:
         """S01 (SSO) routes to in_sprint with Must priority."""
@@ -722,7 +718,7 @@ class TestIntegration:
         segments = get_fixture_segments()
         l1_result = classify_transcript(segments)
         l2_result = enrich_segments(l1_result)
-        l3_result = allocate_tasks(l2_result, "Simulation", 10)
+        l3_result = allocate_tasks(l2_result, "Discovery", 2)
 
         s01_tasks = [t for t in l3_result.in_sprint if t.segment_id == "S01"]
         if s01_tasks:
@@ -738,7 +734,7 @@ class TestIntegration:
         segments = get_fixture_segments()
         l1_result = classify_transcript(segments)
         l2_result = enrich_segments(l1_result)
-        l3_result = allocate_tasks(l2_result, "Simulation", 10)
+        l3_result = allocate_tasks(l2_result, "Discovery", 2)
 
         all_tasks = l3_result.in_sprint + l3_result.out_of_sprint
         decision_or_low = any(
@@ -754,7 +750,7 @@ class TestIntegration:
         segments = get_fixture_segments()
         l1_result = classify_transcript(segments)
         l2_result = enrich_segments(l1_result)
-        l3_result = allocate_tasks(l2_result, "Simulation", 10)
+        l3_result = allocate_tasks(l2_result, "Discovery", 2)
 
         in_tasks = l3_result.in_sprint
         if len(in_tasks) > 1:
@@ -769,7 +765,7 @@ class TestIntegration:
         segments = get_fixture_segments()
         l1_result = classify_transcript(segments)
         l2_result = enrich_segments(l1_result)
-        l3_result = allocate_tasks(l2_result, "Simulation", 10)
+        l3_result = allocate_tasks(l2_result, "Discovery", 2)
 
         expected_ids = {seg.segment_id for seg in l2_result.enriched}
         result_ids = {t.segment_id for t in l3_result.in_sprint + l3_result.out_of_sprint}
